@@ -3,14 +3,13 @@ class codeGen():
     def __init__(self, blemap):
         self.map = blemap
 
-    def generate_C(self, service):
-        pass
-
     def run(self):
         for service in self.map:
             self.generate_H(service)
             self.generate_C(service)
 
+    def generate_C(self, service):
+        pass
 
     def generate_H(self, service):
         filename = "ble_"+service.name+".h"
@@ -45,7 +44,7 @@ class codeGen():
         f.write("\n")
 
         f.write("/**@brief "+service.name.upper()+" Service event handler type. */\n")
-        f.write("typedef struct ble_"+service.name+"_s ble_"+service.name+"_t;\n")
+        f.write("typedef void (* ble_"+service.name+"_evt_handler_t) (ble_"+service.name+"_t * p_"+service.name+", ble_"+service.name+"_evt_t * p_evt);\n")
         f.write("\n")
 
         # Service INIT.
@@ -55,7 +54,7 @@ class codeGen():
         default_str = ""
         security_str = ""
         for ch in service.charL:
-            default_str += "\t"+ch.type+ " \t default_"+ch.name + "\n"
+            default_str += "\t"+ch.type+ " \t default_"+ch.name+";\n"
             if('r' in ch.actions):
                 security_str += "\tsecurity_req_t \t "+ch.name+"_rd_sec;\n"
             if('r' in ch.actions):

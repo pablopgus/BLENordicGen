@@ -42,14 +42,14 @@ typedef struct
 typedef struct ble_obt_s ble_obt_t;
 
 /**@brief OBT Service event handler type. */
-typedef struct ble_obt_s ble_obt_t;
+typedef void (* ble_obt_evt_handler_t) (ble_obt_t * p_obt, ble_obt_evt_t * p_evt);
 
 /**@brief OBT Service init structure. This contains all options and data needed for initialization of the service.*/
 typedef struct
 {
 	ble_obt_evt_handler_t  evt_handler;                    /**< Event handler to be called for handling events in the OBT Service. */
-	float 	 default_central_frequency
-	float 	 default_q_factor
+	float 	 default_central_frequency;
+	float 	 default_q_factor;
 	security_req_t 	 central_frequency_rd_sec;
 	security_req_t 	 central_frequency_cccd_wr_sec;
 	security_req_t 	 q_factor_rd_sec;
