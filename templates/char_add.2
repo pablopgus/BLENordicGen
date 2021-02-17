@@ -1,0 +1,8 @@
+    err_code = characteristic_add(p_<service.name>->service_handle,&add_char_params,&(p_<service.name>-><char.name>_handles));
+    if (err_code != NRF_SUCCESS)
+    {
+        return err_code;
+    }
+    return NRF_SUCCESS;
+}
+

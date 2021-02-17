@@ -1,0 +1,26 @@
+/**@brief Function for adding the <SERVICE.NAME> <CHAR.NAME> characteristic.
+ *
+ * @param[in]   p_<service.name>        <SERVICE.NAME> Service structure.
+ * @param[in]   p_<service.name>_init   Information needed to initialize the service.
+ *
+ * @return      NRF_SUCCESS on success, otherwise an error code.
+ */
+static ret_code_t <char.name>_char_add(ble_<service.name>_t * p_<service.name>, const ble_<service.name>_init_t * p_<service.name>_init)
+{
+    ret_code_t             err_code;
+    ble_add_char_params_t  add_char_params;
+    ble_add_descr_params_t add_descr_params;
+    <char.type>                  default_<char.name>;
+    uint8_t                init_len;
+    uint8_t                encoded_report_ref[BLE_SRV_ENCODED_REPORT_REF_LEN];
+
+    // Add <char.name> characteristic
+    default_<char.name> = p_<service.name>_init->default_<char.name>;
+
+    memset(&add_char_params, 0, sizeof(add_char_params));
+    add_char_params.uuid              = BLE_UUID_<CHAR.NAME>;
+    add_char_params.max_len           = sizeof(<char.type>);
+    add_char_params.init_len          = sizeof(<char.type>);
+    add_char_params.p_init_value      = &default_<char.name>;
+
+    add_char_params.char_props.read   = 1;

@@ -1,3 +1,5 @@
+import string
+
 
 class codeGen():
     def __init__(self, blemap):
@@ -7,9 +9,116 @@ class codeGen():
         for service in self.map:
             self.generate_H(service)
             self.generate_C(service)
+        self.generate_Services_init_function()
+
+    def generate_Services_init_function(self):
+        filename = "ble_service_init_function.c"
+        f = open(filename, "w")
+
+        for service in self.map:
+            f.write("#include \"ble_"+service.name+".h\"\n")
+        f.write("\n")
+
+        f.write("NRF_BLE_QWR_DEF(m_qwr);\n")
+        for service in self.map:
+            f.write("BLE_"+service.name.upper()+"_DEF(m_"+service.name+");\n")
+        f.write("\n")
+
+        f.write("/**@brief Function for initializing services that will be used by the application.\n *\n * @details Initialize the Heart Rate, Battery and Device Information services.\n */\n")
+        f.write("void services_init(void)\n{\n")
+        f.write("\tret_code_t         err_code;\n\tnrf_ble_qwr_init_t qwr_init = {0};\n")
+        for service in self.map:
+            f.write("\tble_"+service.name+"_init_t     "+service.name+"_init;\n")
+        f.write("\n")
+
+        f.write("\t// Initialize Queued Write Module.\n\tqwr_init.error_handler = nrf_qwr_error_handler;\n\terr_code = nrf_ble_qwr_init( & m_qwr, & qwr_init);\n\tAPP_ERROR_CHECK(err_code);\n")
+        f.write("\n")
+
+
+        for service in self.map:
+            f.write("\tmemset( & "+service.name+"_init, 0, sizeof("+service.name+"_init));\n\t"+service.name+"_init.evt_handler = NULL;\n")
+            for ch in service.charL:
+                if('r' in ch.actions):
+                    f.write("\t" + service.name + "_init."+ch.name+"_rd_sec = SEC_OPEN;\n")
+                if('w' in ch.actions):
+                    f.write("\t" + service.name + "_init."+ch.name+"_cccd_wr_sec = SEC_OPEN;\n")
+
+            f.write("\terr_code = ble_"+service.name+"_init( & m_"+service.name+", & "+service.name+"_init);\n\tAPP_ERROR_CHECK(err_code);\n")
+            f.write("\n")
+
+        f.write("}\n\n")
 
     def generate_C(self, service):
-        pass
+        filename = "ble_"+service.name+".c"
+        f = open(filename, "w")
+        f.write("#include \"ble_"+service.name.upper()+".h\"\n#include \"sdk_common.h\"\n#if NRF_MODULE_ENABLED(BLE_"+service.name.upper()+")\n#include \"ble_"+service.name+".h\"\n#include <string.h>\n#include \"ble_srv_common.h\"\n#include \"ble_conn_state.h\"\n")
+        f.write("\n")
+
+        f.write("#define NRF_LOG_MODULE_NAME ble_"+service.name+"\n")
+        f.write("#if BLE_"+service.name.upper()+"_CONFIG_LOG_ENABLED\n#define NRF_LOG_LEVEL       BLE_"+service.name.upper()+"_CONFIG_LOG_LEVEL\n#define NRF_LOG_INFO_COLOR  BLE_"+service.name.upper()+"_CONFIG_INFO_COLOR\n#define NRF_LOG_DEBUG_COLOR BLE_"+service.name.upper()+"_CONFIG_DEBUG_COLOR\n#else // BLE_"+service.name.upper()+"_CONFIG_LOG_ENABLED\n#define NRF_LOG_LEVEL       0\n#endif // BLE_"+service.name.upper()+"_CONFIG_LOG_ENABLED\n")
+        f.write("\n")
+        f.write("#include \"nrf_log.h\"\nNRF_LOG_MODULE_REGISTER();\n")
+        f.write("\n")
+
+        f.write("void ble_"+service.name+"_on_ble_evt(ble_evt_t const * p_ble_evt, void * p_context)\n{\n\tif ((p_context == NULL) || (p_ble_evt == NULL))\n\t{\n\t\treturn;\n\t}\n\n\tble_"+service.name+"_t * p_"+service.name+" = (ble_"+service.name+"_t *)p_context;\n\n")
+        f.write("\tswitch (p_ble_evt->header.evt_id)\n\t{\n\t\tcase BLE_GATTS_EVT_WRITE:\n\t\t\ton_write(p_"+service.name+", p_ble_evt);\n\t\t\tbreak;\n\n\t\tdefault: \n\t\t\t// No implementation needed.\n\t\t\tbreak;\n\t}\n}\n")
+        f.write("\n")
+
+        # Char inits.
+        """    
+    add_char_params.cccd_write_access = p_<service.name>_init-><char.name>_cccd_wr_sec;
+    add_char_params.read_access       = p_<service.name>_init-><char.name>_rd_sec;
+    """
+
+        tf = open("templates/char_add.1", "r")
+        add_char1_str = tf.read()
+        tf = open("templates/char_add.2", "r")
+        add_char2_str = tf.read()
+
+        for ch in service.charL:
+            t_ = add_char1_str.replace("<SERVICE.NAME>", service.name.upper())
+            t_ = t_.replace("<service.name>", service.name)
+            t_ = t_.replace("<CHAR.NAME>", ch.name.upper())
+            t_ = t_.replace("<char.name>", ch.name)
+            t_ = t_.replace("<char.type>", ch.type)
+            f.write(t_)
+
+            if('r' in ch.actions):
+                f.write("\tadd_char_params.cccd_write_access = p_"+service.name+"_init->"+ch.name+"_rd_sec;\n")
+            if('w' in ch.actions):
+                f.write("\tadd_char_params.cccd_write_access = p_"+service.name+"_init->"+ch.name+"_cccd_wr_sec;\n")
+
+            t_ = add_char2_str.replace("<SERVICE.NAME>", service.name.upper())
+            t_ = t_.replace("<service.name>", service.name)
+            t_ = t_.replace("<CHAR.NAME>", ch.name.upper())
+            t_ = t_.replace("<char.name>", ch.name)
+            t_ = t_.replace("<char.type>", ch.type)
+            f.write(t_)
+
+
+        # Service init.
+        f.write("ret_code_t ble_"+service.name+"_init(ble_"+service.name+"_t * p_"+service.name+", const ble_"+service.name+"_init_t * p_"+service.name+"_init)\n{\n")
+        f.write("\tif (p_"+service.name+" == NULL || p_"+service.name+"_init == NULL)\n\t{\n\t\treturn NRF_ERROR_NULL;\n\t}\n")
+        f.write("\tret_code_t err_code;\n\tble_uuid_t ble_uuid;\n\n")
+        f.write("\t// Initialize service structure\n\tp_"+service.name+"->evt_handler               = p_"+service.name+"_init->evt_handler;\n")
+
+        for ch in service.charL:
+            f.write("\tp_"+service.name+"->"+ch.name+"         = "+ch.default+";\n")
+
+        f.write("\n")
+
+        f.write("\t// Add service\n\tBLE_UUID_BLE_ASSIGN(ble_uuid, "+service.uuid+");\n\n\terr_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, & ble_uuid, & p_"+service.name+"->service_handle);\n")
+        f.write("\tVERIFY_SUCCESS(err_code);\n")
+        f.write("\n")
+
+        for ch in service.charL:
+            f.write("\terr_code = "+ch.name+"_char_add(p_"+service.name+", p_"+service.name+"_init);\n")
+
+        f.write("\treturn err_code;\n")
+
+        f.write("}\n")
+        f.write("\n")
+        f.write("#endif // NRF_MODULE_ENABLED(BLE_"+service.name.upper()+")")
 
     def generate_H(self, service):
         filename = "ble_"+service.name+".h"
@@ -23,7 +132,7 @@ class codeGen():
         f.write("\n")
 
         f.write("/* Enable "+service.name.upper()+" Module */\n")
-        f.write("#define BLE_"+service.name.upper()+"_ENABLED 1\n")
+        f.write("#define BLE_"+service.name.upper()+"_ENABLED 1\n#define BLE_OBT_BLE_OBSERVER_PRIO 2\n")
         f.write("\n")
 
         f.write("#ifdef __cplusplus\nextern \"C\" {\n#endif\n")
@@ -57,7 +166,7 @@ class codeGen():
             default_str += "\t"+ch.type+ " \t default_"+ch.name+";\n"
             if('r' in ch.actions):
                 security_str += "\tsecurity_req_t \t "+ch.name+"_rd_sec;\n"
-            if('r' in ch.actions):
+            if('w' in ch.actions):
                 security_str += "\tsecurity_req_t \t "+ch.name+"_cccd_wr_sec;\n"
 
         f.write(default_str)

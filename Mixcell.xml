@@ -1,7 +1,13 @@
 <BLE>
-    <SERVICE name="obt" uuid="0xABCD">
-        <CHAR name="central_frequency"  uuid="0xC000" type="float" initial="1000.0" actions="rw"></CHAR>
-        <CHAR name="q_factor"           uuid="0xC001" type="float" initial="10.0"   actions="rw"></CHAR>
+    <SERVICE name="power" uuid="0xAF00">
+        <CHAR name="status"  uuid="0xC000" type="bool" initial="false" actions="r"></CHAR>
+        <CHAR name="control"  uuid="0xC001" type="uint8_t" initial="0x00" actions="rw"></CHAR>
+        <CHAR name="battery_level"  uuid="0xC002" type="float" initial="0.0" actions="rw"></CHAR>
     </SERVICE>
-
+    <SERVICE name="obt" uuid="0xAF01">
+        <CHAR name="central_frequency"  uuid="0xC100" type="float" initial="1000.0" actions="rw"></CHAR>
+        <CHAR name="q_factor"           uuid="0xC101" type="float" initial="10.0"   actions="rw"></CHAR>
+        <CHAR name="noise_filter_q"     uuid="0xC102" type="float" initial="10.0"   actions="rw"></CHAR>
+        <CHAR name="hysteresis"         uuid="0xC103" type="float" initial="10.0"   actions="rw"></CHAR>
+    </SERVICE>
 </BLE>
