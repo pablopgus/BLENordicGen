@@ -24,14 +24,29 @@ class codeGen():
             f.write("BLE_"+service.name.upper()+"_DEF(m_"+service.name+");\n")
         f.write("\n")
 
+        f.write("static ble_uuid_t m_adv_uuids[] = /** < Universally unique service identifiers. */\n{\n")
+        f.write("\t{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE},\n")
+
+        for service in self.map:
+            f.write("\t{"+service.uuid+", BLE_UUID_TYPE_BLE},\n")
+
+        f.write("};\n")
+        f.write("\n")
+
+
         f.write("/**@brief Function for initializing services that will be used by the application.\n *\n * @details Initialize the Heart Rate, Battery and Device Information services.\n */\n")
         f.write("void services_init(void)\n{\n")
+
         f.write("\tret_code_t         err_code;\n\tnrf_ble_qwr_init_t qwr_init = {0};\n")
+        f.write("\tble_dis_init_t     dis_init;\n")
         for service in self.map:
             f.write("\tble_"+service.name+"_init_t     "+service.name+"_init;\n")
         f.write("\n")
 
         f.write("\t// Initialize Queued Write Module.\n\tqwr_init.error_handler = nrf_qwr_error_handler;\n\terr_code = nrf_ble_qwr_init( & m_qwr, & qwr_init);\n\tAPP_ERROR_CHECK(err_code);\n")
+        f.write("\n")
+
+        f.write("\t// Initialize Device Information Service.\n\tmemset(&dis_init, 0, sizeof(dis_init));\n\tble_srv_ascii_to_utf8(&dis_init.manufact_name_str, (char *)MANUFACTURER_NAME);\n\tdis_init.dis_char_rd_sec = SEC_OPEN;\n\terr_code = ble_dis_init(&dis_init);\n\tAPP_ERROR_CHECK(err_code);\n")
         f.write("\n")
 
 
@@ -44,9 +59,15 @@ class codeGen():
                     f.write("\t" + service.name + "_init."+ch.name+"_cccd_wr_sec = SEC_OPEN;\n")
 
             f.write("\terr_code = ble_"+service.name+"_init( & m_"+service.name+", & "+service.name+"_init);\n\tAPP_ERROR_CHECK(err_code);\n")
-            f.write("\n")
+        f.write("}\n")
 
-        f.write("}\n\n")
+    def replaceTokens(self, strF, service, char):
+        t_ = strF.replace("<SERVICE.NAME>", service.name.upper())
+        t_ = t_.replace("<service.name>", service.name)
+        t_ = t_.replace("<CHAR.NAME>", char.name.upper())
+        t_ = t_.replace("<char.name>", char.name)
+        t_ = t_.replace("<char.type>", char.type)
+        return t_
 
     def generate_C(self, service):
         filename = "ble_"+service.name+".c"
@@ -60,41 +81,74 @@ class codeGen():
         f.write("#include \"nrf_log.h\"\nNRF_LOG_MODULE_REGISTER();\n")
         f.write("\n")
 
-        f.write("void ble_"+service.name+"_on_ble_evt(ble_evt_t const * p_ble_evt, void * p_context)\n{\n\tif ((p_context == NULL) || (p_ble_evt == NULL))\n\t{\n\t\treturn;\n\t}\n\n\tble_"+service.name+"_t * p_"+service.name+" = (ble_"+service.name+"_t *)p_context;\n\n")
-        f.write("\tswitch (p_ble_evt->header.evt_id)\n\t{\n\t\tcase BLE_GATTS_EVT_WRITE:\n\t\t\ton_write(p_"+service.name+", p_ble_evt);\n\t\t\tbreak;\n\n\t\tdefault: \n\t\t\t// No implementation needed.\n\t\t\tbreak;\n\t}\n}\n")
+        ### Custom Code.
+        f.write("/** ==================== TODO CODE ==================== */\n\n")
+
+        tf = open("templates/on_connect", "r")
+        on_connect_str = tf.read()
+        for ch in service.charL:
+            t_ = self.replaceTokens(on_connect_str, service, ch)
+        f.write(t_)
+        f.write("\n")
+
+        tf = open("templates/on_write1", "r")
+        on_write_str = tf.read()
+        for ch in service.charL:
+            t_ = self.replaceTokens(on_write_str, service, ch)
+        f.write(t_)
+
+        # Iterate over the chars to add the catch points.
+        i = 0
+        for ch in service.charL:
+            if (i == 0):
+                f.write("\tif(p_evt_write->handle == p_"+service.name+"->"+ch.name+"_handles.value_handle)\n\t{\n\t\t//TODO: "+ch.name+"\n\t}\n")
+            else:
+                f.write("\telse if(p_evt_write->handle == p_"+service.name+"->"+ch.name+"_handles.value_handle)\n\t{\n\t\t//TODO: "+ch.name+"\n\t}\n")
+            i = i + 1
+
+        f.write("}\n")
+
+        f.write("\n")
+
+        tf = open("templates/update", "r")
+        update_str = tf.read()
+        for ch in service.charL:
+            t_ = self.replaceTokens(update_str, service, ch)
+            f.write(t_)
+
+        f.write("\n")
+
+        ### Static Code.
+
+        f.write("/** ==================== STATIC CODE ==================== */\n\n")
+
+        tf = open("templates/ble_event", "r")
+        event_str = tf.read()
+        for ch in service.charL:
+            t_ = self.replaceTokens(event_str, service, ch)
+        f.write(t_)
+        f.write("\n")
+
         f.write("\n")
 
         # Char inits.
-        """    
-    add_char_params.cccd_write_access = p_<service.name>_init-><char.name>_cccd_wr_sec;
-    add_char_params.read_access       = p_<service.name>_init-><char.name>_rd_sec;
-    """
-
         tf = open("templates/char_add.1", "r")
         add_char1_str = tf.read()
         tf = open("templates/char_add.2", "r")
         add_char2_str = tf.read()
 
         for ch in service.charL:
-            t_ = add_char1_str.replace("<SERVICE.NAME>", service.name.upper())
-            t_ = t_.replace("<service.name>", service.name)
-            t_ = t_.replace("<CHAR.NAME>", ch.name.upper())
-            t_ = t_.replace("<char.name>", ch.name)
-            t_ = t_.replace("<char.type>", ch.type)
+            t_ = self.replaceTokens(add_char1_str, service, ch)
             f.write(t_)
 
             if('r' in ch.actions):
-                f.write("\tadd_char_params.cccd_write_access = p_"+service.name+"_init->"+ch.name+"_rd_sec;\n")
+                f.write("\tadd_char_params.read_access = p_"+service.name+"_init->"+ch.name+"_rd_sec;\n")
             if('w' in ch.actions):
                 f.write("\tadd_char_params.cccd_write_access = p_"+service.name+"_init->"+ch.name+"_cccd_wr_sec;\n")
 
-            t_ = add_char2_str.replace("<SERVICE.NAME>", service.name.upper())
-            t_ = t_.replace("<service.name>", service.name)
-            t_ = t_.replace("<CHAR.NAME>", ch.name.upper())
-            t_ = t_.replace("<char.name>", ch.name)
-            t_ = t_.replace("<char.type>", ch.type)
+            t_ = self.replaceTokens(add_char2_str, service, ch)
             f.write(t_)
-
+        f.write("\n")
 
         # Service init.
         f.write("ret_code_t ble_"+service.name+"_init(ble_"+service.name+"_t * p_"+service.name+", const ble_"+service.name+"_init_t * p_"+service.name+"_init)\n{\n")
@@ -132,7 +186,7 @@ class codeGen():
         f.write("\n")
 
         f.write("/* Enable "+service.name.upper()+" Module */\n")
-        f.write("#define BLE_"+service.name.upper()+"_ENABLED 1\n#define BLE_OBT_BLE_OBSERVER_PRIO 2\n")
+        f.write("#define BLE_"+service.name.upper()+"_ENABLED 1\n#define BLE_"+service.name.upper()+"_BLE_OBSERVER_PRIO 2\n")
         f.write("\n")
 
         f.write("#ifdef __cplusplus\nextern \"C\" {\n#endif\n")

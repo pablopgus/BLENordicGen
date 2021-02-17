@@ -1,0 +1,33 @@
+uint32_t ble_<service.name>_<char.name>_update(ble_<service.name>_t * p_<service.name>, <char.type> <char.name>)
+{
+    if (p_<service.name> == NULL)
+    {
+        return NRF_ERROR_NULL;
+    }
+
+    uint32_t err_code = NRF_SUCCESS;
+    ble_gatts_value_t gatts_value;
+
+    // Initialize value struct.
+    memset(&gatts_value, 0, sizeof(gatts_value));
+
+    gatts_value.len     = sizeof(<char.type>);
+    gatts_value.offset  = 0;
+    //TODO Check that datatype is consistent.
+    gatts_value.p_value = (uint8_t) <char.name>;
+
+    // Update database.
+    err_code = sd_ble_gatts_value_set(p_<service.name>->conn_handle,p_<service.name>-><char.name>_handles.value_handle,&gatts_value);
+    if (err_code == NRF_SUCCESS)
+    {
+        // TODO Store value in the p_<service.name>-><char.name> (May use '=', maybe & or * depending on data).
+        memcpy(&p_<service.name>-><char.name>, &<char.name>, sizeof(<char.type>));
+    }
+    else
+    {
+        return err_code;
+    }
+
+    return err_code;
+}
+

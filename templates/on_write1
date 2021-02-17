@@ -1,0 +1,14 @@
+/**@brief Function for handling the Write event.
+ *
+ * @param[in]   p_<service.name>       <SERVICE.NAME> Service structure.
+ * @param[in]   p_ble_evt			  Event received from the BLE stack.
+ */
+static void on_write(ble_<service.name>_t * p_<service.name>, ble_evt_t const * p_ble_evt)
+{
+    ble_gatts_evt_write_t const * p_evt_write = &p_ble_evt->evt.gatts_evt.params.write;
+
+	/** TODO On write events. Whenever the BLE Chars are updated this function is triggered.
+	  * p_evt_write->handle: Contains the updated field info.
+      * p_ble_evt->evt.gatts_evt.params.write.data[0]: Contains the updated data.
+	*/
+

@@ -1,0 +1,28 @@
+void ble_<service.name>_on_ble_evt(ble_evt_t const * p_ble_evt, void * p_context)
+{
+    if ((p_context == NULL) || (p_ble_evt == NULL))
+    {
+        return;
+    }
+
+    ble_<service.name>_t * p_<service.name> = (ble_<service.name>_t *)p_context;
+
+    switch (p_ble_evt->header.evt_id)
+    {
+        case BLE_GAP_EVT_CONNECTED:
+            on_connect(p_<service.name>, p_ble_evt);
+            break;
+
+        case BLE_GAP_EVT_DISCONNECTED:
+            on_disconnect(p_<service.name>, p_ble_evt);
+            break;
+
+        case BLE_GATTS_EVT_WRITE:
+            on_write(p_<service.name>, p_ble_evt);
+            break;
+
+        default:
+            // No implementation needed.
+            break;
+    }
+}
