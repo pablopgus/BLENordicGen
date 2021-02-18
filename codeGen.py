@@ -53,12 +53,15 @@ class codeGen():
         for service in self.map:
             f.write("\tmemset( & "+service.name+"_init, 0, sizeof("+service.name+"_init));\n\t"+service.name+"_init.evt_handler = NULL;\n")
             for ch in service.charL:
+                f.write("\t//TODO Set default variable values.\n")
+                f.write("\t//"+service.name+"_init.default_"+ch.name+" = "+ch.default+";\n")
                 if('r' in ch.actions):
                     f.write("\t" + service.name + "_init."+ch.name+"_rd_sec = SEC_OPEN;\n")
                 if('w' in ch.actions):
                     f.write("\t" + service.name + "_init."+ch.name+"_cccd_wr_sec = SEC_OPEN;\n")
 
             f.write("\terr_code = ble_"+service.name+"_init( & m_"+service.name+", & "+service.name+"_init);\n\tAPP_ERROR_CHECK(err_code);\n")
+            f.write("\n")
         f.write("}\n")
 
     def replaceTokens(self, strF, service, char):
