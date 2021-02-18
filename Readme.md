@@ -20,7 +20,7 @@ This script will generate .h .c pairs for basic BLE Services allowing read, writ
 This input will generate .h/.c files containing two services (power & obt) which then have several characteristics. 
 Actions field currently accounts for "read" and "write" permissions only. Notifications are under development. 
 
-![alt text](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 1")
+![NordicConnect](https://github.com/pablopgus/BLENordicGen/blob/master/img/NordicConnect.png?raw=true "Nordic Connect")
 
 The code generated has //TODO marks to complete specific entry points such as update values and on write events. 
 
