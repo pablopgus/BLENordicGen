@@ -59,6 +59,7 @@ class codeGen():
                     f.write("\t" + service.name + "_init."+ch.name+"_rd_sec = SEC_OPEN;\n")
                 if('w' in ch.actions):
                     f.write("\t" + service.name + "_init."+ch.name+"_cccd_wr_sec = SEC_OPEN;\n")
+                    f.write("\t" + service.name + "_init."+ch.name+"_wr_sec = SEC_OPEN;\n")
 
             f.write("\terr_code = ble_"+service.name+"_init( & m_"+service.name+", & "+service.name+"_init);\n\tAPP_ERROR_CHECK(err_code);\n")
             f.write("\n")
@@ -145,9 +146,12 @@ class codeGen():
             f.write(t_)
 
             if('r' in ch.actions):
+                f.write("add_char_params.char_props.read = 1;")
                 f.write("\tadd_char_params.read_access = p_"+service.name+"_init->"+ch.name+"_rd_sec;\n")
             if('w' in ch.actions):
+                f.write("add_char_params.char_props.write = 1;")
                 f.write("\tadd_char_params.cccd_write_access = p_"+service.name+"_init->"+ch.name+"_cccd_wr_sec;\n")
+                f.write("\tadd_char_params.write_access = p_"+service.name+"_init->"+ch.name+"_wr_sec;\n")
 
             t_ = self.replaceTokens(add_char2_str, service, ch)
             f.write(t_)
@@ -225,6 +229,7 @@ class codeGen():
                 security_str += "\tsecurity_req_t \t "+ch.name+"_rd_sec;\n"
             if('w' in ch.actions):
                 security_str += "\tsecurity_req_t \t "+ch.name+"_cccd_wr_sec;\n"
+                security_str += "\tsecurity_req_t \t "+ch.name+"_wr_sec;\n"
 
         f.write(default_str)
         f.write(security_str)
