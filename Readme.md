@@ -1,5 +1,7 @@
 # Bluetooth Low Energy Nordic Service Generator
 This script will generate .h .c pairs for basic BLE Services allowing read, write and subscribe to characteristics.
+Supports SDK v16.
+This code was tested on a nRF52840 Board (PCA10040). 
 
 ## Input File: Example provided <Mixcell.xml>
 ```xml
