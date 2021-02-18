@@ -22,5 +22,7 @@ Actions field currently accounts for "read" and "write" permissions only. Notifi
 
 ![NordicConnect](https://github.com/pablopgus/BLENordicGen/blob/master/img/NordicConnect.png?raw=true "Nordic Connect")
 
-The code generated has //TODO marks to complete specific entry points such as update values and on write events. 
+The code generated has //TODO marks to complete specific entry points such as update values and on write events.  
+
+![OnWrite](https://github.com/pablopgus/BLENordicGen/blob/master/img/OnWrite.png?raw=true "Nordic Connect")
 
